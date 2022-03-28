@@ -37,6 +37,8 @@ class BO:
         self.range_X = range_X
         self.num_dim = range_X.shape[0]
         self.str_acq = str_acq
+
+        assert str_surrogate in ['gaussian_process', 'ours']
         self.str_surrogate = str_surrogate
 
     def _get_samples_uniform(self, num_samples, seed=None):
