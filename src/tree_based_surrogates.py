@@ -1,6 +1,7 @@
 import numpy as np
 
 
+'''
 def get_mean_std(model, X_test):
     preds = model.predict(X_test)
 
@@ -14,6 +15,7 @@ def get_mean_std(model, X_test):
     print(np.linalg.norm(np.abs(preds - mean)))
 
     return mean, std
+'''
 
 def return_std(X, trees, predictions, min_variance=0.0):
     """

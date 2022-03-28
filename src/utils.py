@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 
 
-def plot_1d(X_train, Y_train, X_test, Y_test, mean=None, std=None, str_figure=None, show_fig=False):
+def plot_1d(X_train, Y_train, X_test, Y_test, mean=None, std=None, str_figure=None, show_fig=True):
     plt.rc('text', usetex=True)
 
     fig = plt.figure(figsize=(8, 6))
@@ -30,8 +30,13 @@ def plot_1d(X_train, Y_train, X_test, Y_test, mean=None, std=None, str_figure=No
     plt.tight_layout()
 
     if str_figure is not None:
+        path_figures = '../figures'
+
+        if not os.path.exists(path_figures):
+            os.mkdir(path_figures)
+
         plt.savefig(
-            os.path.join('../figures', str_figure + '.pdf'),
+            os.path.join(path_figures, str_figure + '.pdf'),
             format='pdf',
             transparent=True
         )

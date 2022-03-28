@@ -2,3 +2,4 @@ bayeso
 bayeso-benchmarks
 scikit-learn
 matplotlib
+openml
