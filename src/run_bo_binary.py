@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 
 from bayeso import constants
+from bayeso.gp import gp_kernel
 from bayeso.utils import utils_bo
 
 import bo
@@ -24,7 +25,7 @@ if not os.path.exists(path_results):
 str_function = args.function
 str_surrogate = args.surrogate
 seed = 42
-num_samples_ao = 100
+num_samples_ao = 10
 str_acq = 'ei'
 
 num_bo = 10
@@ -40,38 +41,55 @@ print(str_file)
 
 path_all = os.path.join(path_results, str_file)
 
-if str_function == 'branin':
-    from bayeso_benchmarks.two_dim_branin import Branin as target_fun
-    obj = target_fun()
-    fun_target = lambda inputs: obj.output(inputs)
-    ranges = obj.get_bounds()
-elif str_function == 'hartmann6d':
-    from bayeso_benchmarks.six_dim_hartmann6d import Hartmann6D as target_fun
-    obj = target_fun()
-    fun_target = lambda inputs: obj.output(inputs)
-    ranges = obj.get_bounds()
-elif str_function == 'bohachevsky':
-    from bayeso_benchmarks.two_dim_bohachevsky import Bohachevsky as target_fun
-    obj = target_fun()
-    fun_target = lambda inputs: obj.output(inputs)
-    ranges = obj.get_bounds()
-elif str_function == 'ackley':
-    from bayeso_benchmarks.inf_dim_ackley import Ackley as target_fun
-    obj = target_fun(4)
-    fun_target = lambda inputs: obj.output(inputs)
-    ranges = obj.get_bounds()
-elif str_function == 'rosenbrock':
-    from bayeso_benchmarks.inf_dim_rosenbrock import Rosenbrock as target_fun
-    obj = target_fun(4)
-    fun_target = lambda inputs: obj.output(inputs)
-    ranges = obj.get_bounds()
-elif str_function == 'michalewicz':
-    from bayeso_benchmarks.two_dim_michalewicz import Michalewicz as target_fun
-    obj = target_fun()
-    fun_target = lambda inputs: obj.output(inputs)
-    ranges = obj.get_bounds()
+if str_function == 'ising-2':
+    import ising
+    get_model = lambda seed_pair: ising.get_model(1e-2, seed_pair)
+    fun_target = ising.fun_target
+
+    ranges = np.array([[0.0, 1.0]] * 24)
+    seed_pairs = np.random.RandomState(seed).randint(0, 10000, size=(num_bo, 2))
+elif str_function == 'ising-1':
+    import ising
+    get_model = lambda seed_pair: ising.get_model(1e-1, seed_pair)
+    fun_target = ising.fun_target
+
+    ranges = np.array([[0.0, 1.0]] * 24)
+    seed_pairs = np.random.RandomState(seed).randint(0, 10000, size=(num_bo, 2))
+elif str_function == 'ising0':
+    import ising
+    get_model = lambda seed_pair: ising.get_model(1e0, seed_pair)
+    fun_target = ising.fun_target
+
+    ranges = np.array([[0.0, 1.0]] * 24)
+    seed_pairs = np.random.RandomState(seed).randint(0, 10000, size=(num_bo, 2))
+elif str_function == 'contamination-2':
+    import contamination
+    get_model = lambda seed_pair: contamination.get_model(1e-2, seed_pair)
+    fun_target = contamination.fun_target
+
+    ranges = np.array([[0.0, 1.0]] * 25)
+    seed_pairs = np.random.RandomState(seed).randint(0, 10000, size=(num_bo, 2))
+elif str_function == 'contamination-1':
+    import contamination
+    get_model = lambda seed_pair: contamination.get_model(1e-1, seed_pair)
+    fun_target = contamination.fun_target
+
+    ranges = np.array([[0.0, 1.0]] * 25)
+    seed_pairs = np.random.RandomState(seed).randint(0, 10000, size=(num_bo, 2))
+elif str_function == 'contamination0':
+    import contamination
+    get_model = lambda seed_pair: contamination.get_model(1e0, seed_pair)
+    fun_target = contamination.fun_target
+
+    ranges = np.array([[0.0, 1.0]] * 25)
+    seed_pairs = np.random.RandomState(seed).randint(0, 10000, size=(num_bo, 2))
 else:
     raise ValueError('Invalid function.')
+
+
+def round_bx(bx):
+    bx_ = bx >= 0.5
+    return bx_.astype(np.float32)
 
 
 def run_single_round_with_all_initial_information(model_bo, fun_target, X_train, Y_train, num_iter, str_sampling_method_ao, num_samples_ao):
@@ -88,12 +106,34 @@ def run_single_round_with_all_initial_information(model_bo, fun_target, X_train,
 
         time_iter_start = time.time()
 
-        next_point, dict_info = model_bo.optimize(X_final, Y_final,
-            str_sampling_method=str_sampling_method_ao,
-            num_samples=num_samples_ao)
+        if model_bo.str_surrogate == 'gaussian_process':
+            time_start_surrogate_ = time.time()
+
+            if ind_iter < 10 or ind_iter % 100 == 99 or ind_iter % 100 == 0 or ind_iter % 100 == 49 or ind_iter % 100 == 50:
+                _, _, hyps = gp_kernel.get_optimized_kernel(
+                    X_final, Y_final,
+                    None, 'matern52',
+                    str_optimizer_method='BFGS',
+                    str_modelselection_method='ml',
+                    use_ard=True,
+                    debug=True
+                )
+
+            time_end_surrogate_ = time.time()
+
+            next_point, dict_info = model_bo.optimize(X_final, Y_final,
+                str_sampling_method=str_sampling_method_ao,
+                num_samples=num_samples_ao, hyps=hyps)
+
+#            dict_info['time_surrogate'] += time_end_surrogate_ - time_start_surrogate_
+        else:
+            next_point, dict_info = model_bo.optimize(X_final, Y_final,
+                str_sampling_method=str_sampling_method_ao,
+                num_samples=num_samples_ao)
+
+        next_point = round_bx(next_point)
 
         next_points = dict_info['next_points']
-#        acquisitions = dict_info['acquisitions']
         time_surrogate = dict_info['time_surrogate']
         time_acq = dict_info['time_acq']
         time_overall = dict_info['time_overall']
@@ -126,8 +166,9 @@ def run_single_round(model_bo, fun_target, num_init, num_iter, str_initial_metho
     time_initials = []
 
     for elem in X_train:
+        elem = round_bx(elem)
         time_initial_start = time.time()
-        Y_train.append(fun_target(elem))
+        Y_train.append(fun_target(elem)[0])
         time_initial_end = time.time()
         time_initials.append(time_initial_end - time_initial_start)
 
@@ -163,8 +204,10 @@ if __name__ == '__main__':
             cur_seed = seed * (ind_bo + 1)
             print('BO: {} SEED: {}'.format(ind_bo + 1, cur_seed))
             model_bo = bo.BO(ranges, str_acq, str_surrogate)
+            model_fun = get_model(seed_pairs[ind_bo])
+            fun_target_ = lambda X: fun_target(X, model_fun)
 
-            X_, Y_, time_all, time_surrogate, time_acq = run_single_round(model_bo, fun_target, num_init, num_iter, 'sobol', 'sobol', num_samples_ao, cur_seed)
+            X_, Y_, time_all, time_surrogate, time_acq = run_single_round(model_bo, fun_target_, num_init, num_iter, 'sobol', 'sobol', num_samples_ao, cur_seed)
 
             Xs.append(X_)
             Ys.append(Y_)
