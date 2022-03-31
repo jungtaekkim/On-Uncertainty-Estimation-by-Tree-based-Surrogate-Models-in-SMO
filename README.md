@@ -6,4 +6,4 @@ To run this repository, you need to install the required packages described in `
 
 After setting up the environment, execute script files `*.sh`.
 
-If you have any questions, reach out to [Jungtaek Kim](https://jungtaek.github.io).
+If you have any questions, please reach out to [Jungtaek Kim](https://jungtaek.github.io).
