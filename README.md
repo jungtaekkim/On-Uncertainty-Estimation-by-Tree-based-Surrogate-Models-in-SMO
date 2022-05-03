@@ -7,3 +7,14 @@ To run this repository, you need to install the required packages described in `
 After setting up the environment, execute script files `*.sh`.
 
 If you have any questions, please reach out to [Jungtaek Kim](https://jungtaek.github.io).
+
+## Citation
+
+```
+@inproceedings{KimJ2022aistats,
+    author={Kim, Jungtaek and Choi, Seungjin},
+    title={On Uncertainty Estimation by Tree-based Surrogate Models in Sequential Model-based Optimization},
+    booktitle={Proceedings of the International Conference on Artificial Intelligence and Statistics (AISTATS)},
+    year={2022}
+}
+```
